@@ -1,16 +1,14 @@
-
 from os import PathLike
 from src.config.settings import BASE_DIR, VENV_PYTHON_PATH, BOT_MAIN_PATH
 import subprocess
 import sys
 from pathlib import Path
 
-# VENV_PYTHON_PATH = (BASE_DIR.parent / ".venv" / "Scripts" / "python.exe")
-
 
 
 def main():
-    # print(VENV_PYTHON_PATH)
+    
+    '''Run commands from the commandline using this file and the relative commands.'''
     arguments = sys.argv
     length = len(arguments)
     if length == 2:
@@ -20,8 +18,11 @@ def main():
             print('Command not liested.')
 
     elif length == 3:
+        ''' For running files inside the src folder, 
+            use the -m command in order for the absolute and relative imports to work'''
+        
         if arguments[1] == 'runfile':
-            subprocess.check_call([VENV_PYTHON_PATH, BASE_DIR/arguments[2]])
+            subprocess.check_call([VENV_PYTHON_PATH, '-m', f"src.{arguments[2]}"])
         else:
             print('Command not liested.')
     else:

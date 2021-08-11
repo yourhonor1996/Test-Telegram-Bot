@@ -1,14 +1,13 @@
-
-import logging
 import mysql.connector as sql
 from mysql.connector import Error
-from config import settings
-from utility.util import logger
+from src.config import settings
+from src.utility.util import logger
+
 
 
 commands = []
 database_query_filename = 'queries.sql'
-dirname = settings.QUERIES_DIRNAME / database_query_filename
+dirname = settings.QUERIES_DIR / database_query_filename
 
 with open(str(dirname), 'r') as file:
     commands.append(file.read())
@@ -34,8 +33,7 @@ def run_sql_command(commands: "str | list[str]"):
                         records += result.fetchall()
                     # else:
                         # print("Number of rows affected by statement '{}': {}".format(
-                        # result.statement, result.rowcount), '\
-            # return cursor.fetchall()
+            # return records
             print(records)
     except Error as e:
         logger(f"Error while connecting to MySQLL {e}\n")
