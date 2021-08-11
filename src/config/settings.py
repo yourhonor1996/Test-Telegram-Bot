@@ -17,7 +17,9 @@ VENV_FOLDERNAME = '.venv'
 
 VENV_PYTHON_PATH = (BASE_DIR.parent / VENV_FOLDERNAME / "Scripts" / "python.exe")
 
-BOT_MAIN_PATH = BASE_DIR/'bot_main.py'
+BOTMAIN_FILENAME = 'bot_main'
+
+BOT_MAIN_PATH = BASE_DIR/f'{BOTMAIN_FILENAME}.py'
 
 REQUIREMENTS_FILENAME = 'requirements.txt'
 
