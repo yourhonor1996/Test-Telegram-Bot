@@ -8,7 +8,6 @@ from telegram.ext import (
 import logging
 
 from utility.util import logger
-logger('aeahsfh')
 
 def start(update:Update, context:CallbackContext):
     # context.bot.send_message(chat_id= update.effective_chat.id, text= "I'm a botm please talk to me !")
