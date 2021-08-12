@@ -1,9 +1,6 @@
-from os import PathLike
-from src.config.settings import BASE_DIR, VENV_PYTHON_PATH, BOT_MAIN_PATH, BOTMAIN_FILENAME
+from src.config.settings import VENV_PYTHON_PATH, BOTMAIN_FILENAME
 import subprocess
 import sys
-from pathlib import Path
-
 
 
 def main():
@@ -23,9 +20,9 @@ def main():
         if arguments[1] == 'runfile':
             subprocess.check_call([VENV_PYTHON_PATH, '-m', f"src.{arguments[2]}"])
         else:
-            print('Command not liested.')
+            print('Command not supported.')
     else:
-        print('Command not liested.')
+        print('Command not supported.')
 
         
 if __name__ == '__main__':

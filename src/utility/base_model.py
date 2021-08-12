@@ -1,14 +1,7 @@
 
-from .mysql import run_sql
+from src.utility.mysql_util import run_sql
 from src.config import settings
-
-class classproperty(object):
-    def __init__(self, f):
-        self.f = f
-    def __get__(self, obj, owner):
-        return self.f(owner)
-
-
+from src.utility.util import classproperty
 
 class QueryAgent():
 
@@ -19,10 +12,11 @@ class QueryAgent():
     
     def all(self):
         command = self.use_database + \
-            f'''
-            SELECT * FROM {self.tablename}
-            '''
-        run_sql(command)
+        f'''
+        SELECT * FROM {self.tablename}
+        WHERE actor_id < 10;
+        '''
+        return run_sql(command)
     
     def filter(self, **kwargs):
         ...
