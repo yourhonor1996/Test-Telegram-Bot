@@ -24,3 +24,4 @@ BOT_MAIN_PATH = BASE_DIR/f'{BOTMAIN_FILENAME}.py'
 
 REQUIREMENTS_FILENAME = 'requirements.txt'
 
+DATABASE_NAME = 'sakila'
