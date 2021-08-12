@@ -3,6 +3,7 @@ from pathlib import Path
 
 TOKEN = '1891854677:AAEDNLc4q9cbtfHMI0JoBKviVx6gFLsApb4'
 
+# this is the src folder 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 MYSQL_CONNECTION = {
@@ -40,9 +41,9 @@ DJ_DATABASES = {
         'PASSWORD': 'adelante5225',   
     }
 }
+
 DJ_INSTALLED_APPS = [
     'src.config.django_app_config.SRCConfig'
-    # 'src'
 ]
 
 DJ_BASE_DIR = BASE_DIR.parent

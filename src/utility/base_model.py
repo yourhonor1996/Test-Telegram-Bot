@@ -11,7 +11,7 @@ class QueryAgent():
         self.database_name = settings.DATABASE_NAME
         self.use_database = f"USE {self.database_name};"
         self.sqlrunner = SQLRunner()
-        # self.sqlrunner.run_sql(self.use_database, False)
+        self.sqlrunner.run_sql(self.use_database, False)
     
     def all(self):
         command = \
@@ -58,4 +58,4 @@ class ActorModel(BaseModel):
             
             
 # run this file from manage.py for test of the self written orm system
-# print(ActorModel.objects.all())
+print(ActorModel.objects.all())

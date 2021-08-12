@@ -8,5 +8,5 @@ import subprocess
 
 
 subprocess.check_call(['py', '-m', 'venv', settings.VENV_FOLDERNAME])
-subprocess.check_call([settings.VENV_PYTHON_PATH,'-m','pip', 'install','-r', settings.REQUIREMENTS_FILENAME])
+subprocess.check_call([str(settings.VENV_PYTHON_PATH), '-m','pip', 'install','-r', settings.REQUIREMENTS_FILENAME])
 

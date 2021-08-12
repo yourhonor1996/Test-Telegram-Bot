@@ -11,7 +11,6 @@ def main():
         DATABASES= settings.DJ_DATABASES,
         INSTALLED_APPS= settings.DJ_INSTALLED_APPS,
         BASE_DIR = settings.DJ_BASE_DIR,
-        DEFAULT_AUTO_FIELD = settings.DJ_DEFAULT_AUTO_FIELD
     )
     setup()
 
