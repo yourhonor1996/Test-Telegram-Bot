@@ -11,3 +11,6 @@ class classproperty(object):
         self.f = f
     def __get__(self, obj, owner):
         return self.f(owner)
+    
+    
+    

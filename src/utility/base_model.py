@@ -1,5 +1,6 @@
 
-from src.utility.mysql_util import run_sql
+# from src.utility.mysql_util import run_sql
+from src.utility.mysql_util import SQLRunner
 from src.config import settings
 from src.utility.util import classproperty
 
@@ -9,23 +10,23 @@ class QueryAgent():
         self.tablename = tablename
         self.database_name = settings.DATABASE_NAME
         self.use_database = f"USE {self.database_name};"
+        self.sqlrunner = SQLRunner()
+        # self.sqlrunner.run_sql(self.use_database, False)
     
     def all(self):
-        command = self.use_database + \
+        command = \
         f'''
-        SELECT * FROM {self.tablename}
-        WHERE actor_id < 10;
+        SELECT * FROM {self.tablename};
         '''
-        return run_sql(command)
+        return self.sqlrunner.run_sql(command)
     
-    def filter(self, **kwargs):
-        ...
-        
+    def filter(self, filter_type, **kwargs):
+        pass
     def create(self):
-        ...
+        pass
         
     def save(self):
-        ...
+        pass
     
     
     
@@ -56,4 +57,5 @@ class ActorModel(BaseModel):
     pass        
             
             
-print(ActorModel.objects.all())
+# run this file from manage.py for test of the self written orm system
+# print(ActorModel.objects.all())
