@@ -9,6 +9,7 @@ MYSQL_CONNECTION = {
     'user': 'root',
     'password': 'adelante5225',
     'host': '127.0.0.1',
+    'use_pure':True
 }
 
 QUERIES_DIR = BASE_DIR / 'queries'

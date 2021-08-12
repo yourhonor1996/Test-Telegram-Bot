@@ -12,6 +12,15 @@ dirname = settings.QUERIES_DIR / database_query_filename
 with open(str(dirname), 'r') as file:
     commands.append(file.read())
 
+
+def load_commands(query_name:str):
+    '''loads the commands from a certain query filename in the queries folder'''
+    dirname = settings.QUERIES_DIR / f'{query_name}.sql'
+
+    with open(str(dirname), 'r') as file:
+        commands = file.read()
+    return commands
+
 def run_sql_command(commands: "str | list[str]"):
     if type(commands) is str:
         commands = [commands]
@@ -43,6 +52,8 @@ def run_sql_command(commands: "str | list[str]"):
             cursor.close()
             connection.close()
             logger("MySQL connection is closed.")
+
+
         
 
 def main():
