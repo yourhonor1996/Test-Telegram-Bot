@@ -5,9 +5,16 @@ import sys
 
 def main():
     
-    '''Run commands from the commandline using this file and the relative commands.
+    '''
+    Run commands from the commandline using this file and the relative commands.
         For running files inside the src folder, use the -m command in order for the 
-        absolute and relative imports to work.'''
+        absolute and relative imports to work.
+    This file can run files inside the "src" folder and can also start the bot using the "runbot" command.
+        In order to run files inside the src folder just write file as a module, the src folder is a given as a 
+        module parent directory without the .py in the end.
+    Example:
+        python botmanage.py runfile utility.somefile
+    '''
     arguments = sys.argv
     length = len(arguments)
     if length == 2:

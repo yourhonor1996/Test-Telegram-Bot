@@ -1,38 +1,50 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
+
+
+# TODO create an Answer model for saving the answers.
 
 # create your models here
-class User(models.Model):
+class User(AbstractUser):
     """Model definition for User."""
-    chat_id = models.BigIntegerField(unique= True)
+    chat_id = models.BigIntegerField(unique= True, null= True)
     first_name = models.CharField(max_length=50, null= True, blank= True)
     last_name = models.CharField(max_length=50, null= True, blank= True)    
 
+    @property
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'
 
-    # def __str__(self):
-    #     """Unicode representation of User."""
-    #     pass
+    def __str__(self):
+        """Unicode representation of User."""
+        return self.full_name
 
     
 class Quiz(models.Model):
     """Model definition for Quiz."""
     title = models.CharField(max_length=50, unique= True)
 
-
     class Meta:
         """Meta definition for Quiz."""
         verbose_name_plural = 'quizes'
 
-    # def __str__(self):
-    #     return self.title
+    @property
+    def questions_count(self):
+        return TakeQuestion.objects.filter(quiz= self.id).count()
+
+    def __str__(self):
+        return self.title
 
 
 class Subject(models.Model):
     name = models.CharField(max_length=50)
 
+    def __str__(self):
+        return self.name
 
 class Question(models.Model):
-    subjet = models.ForeignKey(Subject, on_delete= models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete= models.CASCADE)
 
     text = models.CharField(max_length=1000)
     op1 = models.CharField(max_length=500)
@@ -40,8 +52,13 @@ class Question(models.Model):
     op3 = models.CharField(max_length=500)
     op4 = models.CharField(max_length=500)
     test_answer = models.PositiveSmallIntegerField()
-
-
+    
+    @property
+    def title(self):
+        return f'{self.text} - {self.subject}'
+    
+    def __str__(self):
+        return self.title
 # ------------------------------------------------------------------------------
 # Middle Tables for models
 class TakeQuiz(models.Model):
@@ -58,6 +75,7 @@ class TakeQuiz(models.Model):
         
         # self.modified = timezone.now()
         return super(User, self).save(*args, **kwargs)
+    
     
     
 class TakeAnswer(models.Model):
