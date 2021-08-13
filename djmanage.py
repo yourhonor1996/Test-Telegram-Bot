@@ -7,11 +7,7 @@ from src.config import settings
 
 def main():
     
-    dj_settings.configure(
-        DATABASES= settings.DJ_DATABASES,
-        INSTALLED_APPS= settings.DJ_INSTALLED_APPS,
-        BASE_DIR = settings.DJ_BASE_DIR,
-    )
+    dj_settings.configure(**settings.DJANGO_SETTINGS)
     setup()
 
     from django.core.management import execute_from_command_line

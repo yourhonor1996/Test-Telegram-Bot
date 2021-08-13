@@ -26,26 +26,27 @@ BOT_MAIN_PATH = BASE_DIR/f'{BOTMAIN_FILENAME}.py'
 
 REQUIREMENTS_FILENAME = 'requirements.txt'
 
-DATABASE_NAME = 'sakila'
+DATABASE_NAME = 'new_schema'
 
 # ---------------------------------------------------------------------------------
 # Django Settings for using django ORM in the project
-
-DJ_DATABASES = {
-    'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': DATABASE_NAME,
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
-        'USER': 'root',
-        'PASSWORD': 'adelante5225',   
-    }
+DJANGO_SETTINGS = {
+    'DATABASES': {
+        'default': {
+            'ENGINE': 'mysql.connector.django',
+            'NAME': DATABASE_NAME,
+            'HOST': '127.0.0.1',
+            'PORT': '3306',
+            'USER': 'root',
+            'PASSWORD': 'adelante5225',   
+        }
+    },
+    
+    'INSTALLED_APPS': [
+        'src.config.django_app_config.SRCConfig'
+    ],
+    
+    'BASE_DIR': BASE_DIR.parent,
+    
+    'DEFAULT_AUTO_FIELD':'django.db.models.BigAutoField',
 }
-
-DJ_INSTALLED_APPS = [
-    'src.config.django_app_config.SRCConfig'
-]
-
-DJ_BASE_DIR = BASE_DIR.parent
-
-DJ_DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
