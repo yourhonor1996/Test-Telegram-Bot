@@ -39,7 +39,7 @@ class Question(models.Model):
     op2 = models.CharField(max_length=500)
     op3 = models.CharField(max_length=500)
     op4 = models.CharField(max_length=500)
-    test_answer = models.PositiveSmallIntegerField(max_length= 1)
+    test_answer = models.PositiveSmallIntegerField()
 
 
 # ------------------------------------------------------------------------------
