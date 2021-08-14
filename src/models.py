@@ -1,3 +1,4 @@
+import random
 from django.core.checks.messages import Error
 from django.db import models
 from django.utils import timezone
@@ -6,8 +7,23 @@ from django.contrib.auth.models import AbstractUser
 
 # TODO create an Answer model for saving the answers.
 # TODO limit the test answer to 1 to 4 
+# -------------------------------------------------
+# Managers
+class QuestionManager(models.Manager):
+    def select_random(self, n):
+        """Selects n records from the model and returns a queryset
 
-# create your models here
+        Args:
+            n (int): number of recorsd to return
+        """
+        # TODO this algorithm may have some room for improvements. see this link: https://stackoverflow.com/questions/1731346/how-to-get-two-random-records-with-django/6405601#6405601
+        my_ids = list(self.values_list('id', flat=True))
+        rand_ids = random.sample(my_ids, n)
+        return self.filter(id__in=rand_ids)
+
+
+# -------------------------------------------------
+# Models
 class User(AbstractUser):
     chat_id = models.BigIntegerField(unique= True, null= True)
     first_name = models.CharField(max_length=50, null= True, blank= True)
@@ -48,6 +64,8 @@ class Subject(models.Model):
 class Question(models.Model):
     '''Each question belongs to a subject but may present in mutilple quiz session '''
     
+    objects = QuestionManager()
+    
     subject = models.ForeignKey(Subject, on_delete= models.CASCADE)
 
     text = models.CharField(max_length=1000)
@@ -60,7 +78,7 @@ class Question(models.Model):
     @property
     def title(self):
         return f'{self.text} - {self.subject}'
-    
+
     def __str__(self):
         return self.title
 # ------------------------------------------------------------------------------

@@ -1,6 +1,9 @@
 import logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
                         level= logging.INFO)
+import os
+from django import setup
+                        
 
 def logger(message:str, *args, **kwargs):
     return logging.log(logging.INFO, message, *args, **kwargs)
@@ -12,5 +15,10 @@ class classproperty(object):
     def __get__(self, obj, owner):
         return self.f(owner)
     
-    
+  
+def config_django():
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'botdjango.settings')
+    from django.core.wsgi import get_wsgi_application
+    application = get_wsgi_application()
+    setup()  
     
