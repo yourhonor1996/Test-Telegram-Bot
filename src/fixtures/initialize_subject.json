@@ -1,29 +1,30 @@
-
-{
-    "model": "src.subject",
-    "id": 1,
-    "fields": {
-        "name": "subject24"
+[
+    {
+        "model": "src.subject",
+        "id": 1,
+        "fields": {
+            "name": "subject1"
+        }
+    },
+    {
+        "model": "src.subject",
+        "id": 2,
+        "fields": {
+            "name": "subject2"
+        }
+    },
+    {
+        "model": "src.subject",
+        "id": 3,
+        "fields": {
+            "name": "subject3"
+        }
+    },
+    {
+        "model": "src.subject",
+        "id": 4,
+        "fields": {
+            "name": "subject4"
+        }
     }
-},
-{
-    "model": "src.subject",
-    "id": 2,
-    "fields": {
-        "name": "subject2"
-    }
-},
-{
-    "model": "src.subject",
-    "id": 3,
-    "fields": {
-        "name": "subject3"
-    }
-},
-{
-    "model": "src.subject",
-    "id": 4,
-    "fields": {
-        "name": "subject4"
-    }
-}
+]
