@@ -1,13 +1,14 @@
+from django.core.checks.messages import Error
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 
 
 # TODO create an Answer model for saving the answers.
+# TODO limit the test answer to 1 to 4 
 
 # create your models here
 class User(AbstractUser):
-    """Model definition for User."""
     chat_id = models.BigIntegerField(unique= True, null= True)
     first_name = models.CharField(max_length=50, null= True, blank= True)
     last_name = models.CharField(max_length=50, null= True, blank= True)    
@@ -22,7 +23,8 @@ class User(AbstractUser):
 
     
 class Quiz(models.Model):
-    """Model definition for Quiz."""
+    """This is the table for quizes. Each quiz needs to be created and then taken."""
+    
     title = models.CharField(max_length=50, unique= True)
 
     class Meta:
@@ -31,7 +33,7 @@ class Quiz(models.Model):
 
     @property
     def questions_count(self):
-        return TakeQuestion.objects.filter(quiz= self.id).count()
+        return SessionQuestion.objects.filter(quiz= self.id).count()
 
     def __str__(self):
         return self.title
@@ -44,6 +46,8 @@ class Subject(models.Model):
         return self.name
 
 class Question(models.Model):
+    '''Each question belongs to a subject but may present in mutilple quiz session '''
+    
     subject = models.ForeignKey(Subject, on_delete= models.CASCADE)
 
     text = models.CharField(max_length=1000)
@@ -61,33 +65,69 @@ class Question(models.Model):
         return self.title
 # ------------------------------------------------------------------------------
 # Middle Tables for models
-class TakeQuiz(models.Model):
-    user = models.ForeignKey(User, on_delete= models.CASCADE)
+class Session(models.Model):
+    '''This table could be interpreted as the "session" that the quiz has been taken.'''
+    
+    user = models.ManyToManyField(User)
     quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
 
+
     date_taken = models.DateTimeField()
+    @property
+    def title(self):
+        return f'Session - {self.id}'
+    
+    def __str__(self):
+        return self.title
+
+    # def save(self, *args, **kwargs):
+    #     ''' On save, update timestamps '''
+    #     # if the item is being created 
+    #     if not self.id:
+    #         self.date_taken = timezone.now()
+        
+    #     # self.modified = timezone.now()
+    #     return super(User, self).save(*args, **kwargs)
+    
+    
+    
+class SessionAnswer(models.Model):
+    '''This table stores the answers that has been recorded in a specific session.'''
+
+    quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
+    session = models.ForeignKey(Session, on_delete= models.CASCADE)
+    question = models.ForeignKey(Question, on_delete= models.CASCADE)
+
+    submitted_test_answer = models.PositiveSmallIntegerField()
+    date_answered = models.DateTimeField()
+    correct_answer = models.BooleanField(default= False)
+    
+    # @property
+    # def correct_answer(self):
+    #     try:
+    #         return self.test_answer == self.question__test_answer
+    #     except Exception as e:
+    #         print(e)
+    #         return 'null'
 
     def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
-        # if the item is being created 
-        if not self.id:
-            self.date_taken = timezone.now()
-        
-        # self.modified = timezone.now()
-        return super(User, self).save(*args, **kwargs)
-    
-    
-    
-class TakeAnswer(models.Model):
-    question = models.ForeignKey(Question, on_delete= models.CASCADE)
-    take_quiz = models.ForeignKey(TakeQuiz, on_delete= models.CASCADE)
+        # if the user submitted the correct answer, when saving the object make the modifications.
+        if self.submitted_test_answer == self.question.test_answer:
+            self.correct_answer = True
+        else:
+            self.correct_answer = False
+        return super(SessionAnswer, self).save(*args, **kwargs)
+            
 
-    test_answer_taken = models.PositiveSmallIntegerField()
-    date_answered = models.DateTimeField()
-    correct_answer = models.BooleanField()
+    @property
+    def title(self):
+        return f'Answer - {self.id}'
+
+
+
+class SessionQuestion(models.Model):
+    '''This table stores the data for the questions that has been selected for the session.'''
     
-    
-class TakeQuestion(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
     question = models.ForeignKey(Question, on_delete= models.CASCADE)
 
