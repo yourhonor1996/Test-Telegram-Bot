@@ -1,4 +1,5 @@
 from telegram.constants import PARSEMODE_HTML
+# first we have to config django settings so we can use the ORM Module.
 from src.utility.util import config_django
 config_django()
 
@@ -53,7 +54,7 @@ def register_contact(update:Update, context:CallbackContext):
     contact = update.message.contact
     chat_id = update.message.chat_id
     # TODO make phone number reg ex or create a form
-    user, create= models.User.objects.get_or_create(user_id = contact.user_id, chat_id= chat_id)
+    user, create= models.User.objects.get_or_create(user_id = contact.user_id, chat_id= chat_id, username= contact.user_id)
     if create:
         user.first_name = contact.first_name
         user.last_name = contact.last_name
@@ -171,22 +172,20 @@ def quiz(update:Update, context:CallbackContext):
     query = update.callback_query
     session_questions_ids = []
     data = query.data
-    print(data)
+    # print(data)
     
     if data == 'cancel_test':
-        query.answer()
-        query.message.edit_text("Canceled the test.")
-        return ConversationHandler.END
+        return cancel_test(update, context)
     
-    # if we are here from the question select function
-    if re.match("^SESSIONID-\d+", data):
+    # if we are here from the question select status
+    elif re.match("^SESSIONID-\d+", data):
         # if the incoming query matches the session id we have in the last cllback, get all the sessions questions
         session_id = data.split('-')[1]
         session = models.Session.objects.get(id= session_id)
         session_questions_ids = util.get_session_question_ids(session)
         # get all the session_questions taht were selected in the session
         keyboard = [
-            # format of the data sent by this button is: {session_question_id}-{index}
+            # format of the data sent by this button is: {session_question_id}-{index} - we send questions this way
             [InlineKeyboardButton("Go to Question 1", callback_data= f'{session_questions_ids[0]}-{0}')],
             [InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")]
         ]
@@ -195,22 +194,24 @@ def quiz(update:Update, context:CallbackContext):
         query.answer()
 
     # if we have a question 
-    if re.match("\d+-\d+", data):    
+    elif re.match("\d+-\d+", data):    
         # get session and session_question ids
         session_question_id, index = [int(item) for item in data.split("-")]
         session_question = models.SessionQuestion.objects.get(id= session_question_id)
         session_questions_ids = util.get_session_question_ids(session_question.session)
         question = session_question.question
         # the index for the question int the session_questions_ids list
-        nex_prev_buttons = []
+        next_prev_buttons = []
         print(f"index: {index}")
+        # we shouldn't have next button in the last question and previous button in the first question
         if index < len(session_questions_ids)-1:
             next_question_id = session_questions_ids[index+1]
-            nex_prev_buttons.append(InlineKeyboardButton("Next Test", callback_data= f"{next_question_id}-{index+1}"))
+            next_prev_buttons.append(InlineKeyboardButton("Next Test", callback_data= f"{next_question_id}-{index+1}"))
             
         if index >= 1:
             previous_question_id = session_questions_ids[index-1]
-            nex_prev_buttons.append(InlineKeyboardButton("Prevoius Test", callback_data= f"{previous_question_id}-{index-1}"))
+            next_prev_buttons.append(InlineKeyboardButton("Prevoius Test", callback_data= f"{previous_question_id}-{index-1}"))
+            
         keyboard = [
             [
                 InlineKeyboardButton(f"1- {question.op1}", callback_data= f'SESSION-{session_question.id}:OPTION-{1}'),
@@ -220,20 +221,17 @@ def quiz(update:Update, context:CallbackContext):
                 InlineKeyboardButton(f"3- {question.op3}", callback_data= f'SESSION-{session_question.id}:OPTION-{3}'),
                 InlineKeyboardButton(f"4- {question.op4}", callback_data= f'SESSION-{session_question.id}:OPTION-{4}')
             ],
-            # place holder for next and previous buttons
-            nex_prev_buttons,
+            next_prev_buttons, # place holder for next and previous buttons
             [
                 InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")
             ]
         ]
-            
-        reply_markup = InlineKeyboardMarkup(keyboard)
         
+        reply_markup = InlineKeyboardMarkup(keyboard)
         query.message.edit_text(f"Question No.{index+1}: {question.text}", reply_markup= reply_markup)
         query.answer()
-
     
-        return QUIZ
+    return QUIZ
 
 
 @util.send_typing_action

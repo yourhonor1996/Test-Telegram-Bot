@@ -59,12 +59,13 @@ def send_typing_action(func):
 
 def get_update(update:Update, context:CallbackContext):
     '''get the update based on whether it is a callback_query or a regular update.
-    if the callback_query doesn't exits it will return a regular update.'''
+    if the callback_query doesn't exits it will return a regular update'''
     if not update.callback_query:
         return update
     return update.callback_query
 
 
 def get_session_question_ids(session):
+    # we have to import django models after the settings configuratoin. We can't import models in the global scope.
     from src import models
     return models.SessionQuestion.objects.filter(session= session).order_by('id').values_list('id', flat= True)
