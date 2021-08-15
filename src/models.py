@@ -7,27 +7,34 @@ from django.contrib.auth.models import AbstractUser
 
 # TODO create an Answer model for saving the answers.
 # TODO limit the test answer to 1 to 4 
+# TODO create forms for validating data 
+# FIXME cerate limitation for education
 # -------------------------------------------------
 # Managers
 class QuestionManager(models.Manager):
-    def select_random(self, n):
+    def select_random(self, n, subjec_id):
         """Selects n records from the model and returns a queryset
 
         Args:
             n (int): number of recorsd to return
         """
         # TODO this algorithm may have some room for improvements. see this link: https://stackoverflow.com/questions/1731346/how-to-get-two-random-records-with-django/6405601#6405601
-        my_ids = list(self.values_list('id', flat=True))
-        rand_ids = random.sample(my_ids, n)
-        return self.filter(id__in=rand_ids)
+        questions = self.filter(subject= subjec_id)
+        ids = list(questions.values_list('id', flat=True))
+        rand_ids = random.sample(ids, n)
+        return questions.filter(id__in= rand_ids)
 
 
 # -------------------------------------------------
 # Models
 class User(AbstractUser):
-    chat_id = models.BigIntegerField(unique= True, null= True)
+    
+    chat_id = models.BigIntegerField(null= True)
+    user_id = models.BigIntegerField(unique= True, null= True)
     first_name = models.CharField(max_length=50, null= True, blank= True)
     last_name = models.CharField(max_length=50, null= True, blank= True)    
+    phone_number = models.CharField(max_length= 13, null= True)
+    education = models.CharField(max_length= 50, null= True)
 
     @property
     def full_name(self):
@@ -41,7 +48,7 @@ class User(AbstractUser):
 class Quiz(models.Model):
     """This is the table for quizes. Each quiz needs to be created and then taken."""
     
-    title = models.CharField(max_length=50, unique= True)
+    title = models.CharField(max_length=50)
 
     class Meta:
         """Meta definition for Quiz."""
@@ -89,8 +96,9 @@ class Session(models.Model):
     user = models.ManyToManyField(User)
     quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
 
-
-    date_taken = models.DateTimeField()
+    date_created = models.DateTimeField()
+    date_taken = models.DateTimeField(null= True)
+    
     @property
     def title(self):
         return f'Session - {self.id}'
@@ -98,17 +106,7 @@ class Session(models.Model):
     def __str__(self):
         return self.title
 
-    # def save(self, *args, **kwargs):
-    #     ''' On save, update timestamps '''
-    #     # if the item is being created 
-    #     if not self.id:
-    #         self.date_taken = timezone.now()
-        
-    #     # self.modified = timezone.now()
-    #     return super(User, self).save(*args, **kwargs)
-    
-    
-    
+
 class SessionAnswer(models.Model):
     '''This table stores the answers that has been recorded in a specific session.'''
 
@@ -120,14 +118,6 @@ class SessionAnswer(models.Model):
     date_answered = models.DateTimeField()
     correct_answer = models.BooleanField(default= False)
     
-    # @property
-    # def correct_answer(self):
-    #     try:
-    #         return self.test_answer == self.question__test_answer
-    #     except Exception as e:
-    #         print(e)
-    #         return 'null'
-
     def save(self, *args, **kwargs):
         # if the user submitted the correct answer, when saving the object make the modifications.
         if self.submitted_test_answer == self.question.test_answer:
@@ -145,8 +135,9 @@ class SessionAnswer(models.Model):
 
 class SessionQuestion(models.Model):
     '''This table stores the data for the questions that has been selected for the session.'''
-    
+    session = models.ForeignKey(Session, on_delete= models.CASCADE)
     quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
     question = models.ForeignKey(Question, on_delete= models.CASCADE)
+    date_created = models.DateTimeField()
 
     

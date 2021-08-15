@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-TOKEN = '1891854677:AAEDNLc4q9cbtfHMI0JoBKviVx6gFLsApb4'
+TOKEN = '1891854677:AAGdDC2MEkq-EQOvwuiIdqz9Kn94xOUFHBI'
 
 # this is the src folder 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,3 +27,5 @@ BOT_MAIN_PATH = BASE_DIR/f'{BOTMAIN_FILENAME}.py'
 REQUIREMENTS_FILENAME = 'requirements.txt'
 
 DATABASE_NAME = 'new_schema'
+
+NUMBER_OF_QUESTIONS = 5

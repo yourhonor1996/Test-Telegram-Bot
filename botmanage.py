@@ -24,17 +24,6 @@ def main():
         python botmanage.py runfile utility.somefile
     '''
     
-    # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'botdjango.settings')
-    # from django.core.wsgi import get_wsgi_application
-    # application = get_wsgi_application()
-    # setup()  
-
-
-
-    # from src import models
-    # print(models.Question.objects.select_random(0))
-    
-    
     arguments = sys.argv
     length = len(arguments)
     if length == 2:
