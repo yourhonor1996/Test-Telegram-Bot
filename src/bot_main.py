@@ -1,3 +1,5 @@
+# TODO optimize regex handling in the conversations and cerate data dictionaries for them
+
 from telegram.constants import PARSEMODE_HTML
 # first we have to config django settings so we can use the ORM Module.
 from src.utility.util import config_django
@@ -18,81 +20,32 @@ from src.utility import util
 from django.utils import timezone
 import re
 
-SUBJECT_SELECT, QUESTION_SELECT, QUIZ, RESULTS = MAIN_PHASES = range(4)
 
+# create_test states
+SUBJECT_SELECT, QUESTION_SELECT, TEST_CREATION = CREATE_TEST_STATES = range(3)
+# quiz states
+QUIZ, RESULTS = MAIN_PHASES = range(len(CREATE_TEST_STATES), len(CREATE_TEST_STATES) + 2)
+# registry states
 REG_CONTACT, REG_EDUCATION= REG_PHASES = range(len(MAIN_PHASES), len(MAIN_PHASES)+2)
-questions_callbcack_handlers = []
 
 
 def start(update:Update, context:CallbackContext):
     message = \
-    "Hello this is a telegram bot. Run the command /start_test to start the test.\n" \
+    "Hello this is a telegram bot. Run the command /start_quiz to start the test.\n" \
     "If you haven't registered please register via /register"
     update.message.reply_text(message, parse_mode= PARSEMODE_HTML)
 
-# ---------------------------------------------------------------------------------------
-# Register Conversation
-
 @util.send_typing_action
-def register_base(update:Update, context:CallbackContext):
-    # TODO BOOK_MARK create steps for aquiring contact information
-    user_id = update.message.from_user.id
-    
-    if models.User.objects.filter(user_id= user_id).exists():
-        update.message.reply_text("You have already registered. You can take a quiz by running the command /start_test")
-        return ConversationHandler.END
-    
-    contact_keyboard = [
-        [KeyboardButton(text="Share Contact", request_contact= True), ('/cancel_register')],
-     ]
-    reply_markup = ReplyKeyboardMarkup(contact_keyboard, input_field_placeholder= "Press /cancel_register to cancel registration...")
-    update.message.reply_text("Please share your contact information: ", reply_markup= reply_markup)
-    return REG_CONTACT
-        
-    
-def register_contact(update:Update, context:CallbackContext):
-    contact = update.message.contact
-    chat_id = update.message.chat_id
-    # TODO make phone number reg ex or create a form
-    user, create= models.User.objects.get_or_create(user_id = contact.user_id, chat_id= chat_id, username= contact.user_id)
-    if create:
-        user.first_name = contact.first_name
-        user.last_name = contact.last_name
-        user.phone_number = contact.phone_number
-        user.set_unusable_password()
-        user.save()
-    else:
-        update.message.reply_text("You have already registered!", reply_markup= ReplyKeyboardRemove())
-        return ConversationHandler.END
-    update.message.reply_text("Please share your education.", reply_markup= ReplyKeyboardRemove())
-    return REG_EDUCATION
-
-
-def register_education(update:Update, context:CallbackContext):
-    # FIXME create a way to filter and authorize the education field
-    message = update.message.text
-    if message:
-        chat_id = update.message.chat_id
-        user = models.User.objects.get(chat_id= chat_id)
-        user.education = message
-        user.save()
-        update.message.reply_text("Thank you for sharing your information! You can now start the test by running the command /start_test")
-    # TODO handle reply messages that are not text or are not correctly formatted
-    return ConversationHandler.END
-
-
-@util.send_typing_action
-def cancel_register(update:Update, context:CallbackContext):
+def cancel(update:Update, context:CallbackContext):
     this_udpate = util.get_update(update, context)
-    this_udpate.message.reply_text("Canceled the registration process.", reply_markup= ReplyKeyboardRemove())
+    this_udpate.message.reply_text("Canceled the process.", reply_markup= ReplyKeyboardRemove())
     return ConversationHandler.END
-
+    
 # ---------------------------------------------------------------------------------------
-# Quiz Conversation
+# Create Test Converstation
 
 @util.send_typing_action
-def start_quiz(update:Update, context:CallbackContext):
-    # TODO if the user is not registered, don't let him start the quiz
+def create_test(update:Update, context:CallbackContext):
     user_id = update.message.from_user.id
     try:
         models.User.objects.get(user_id= user_id)
@@ -100,7 +53,7 @@ def start_quiz(update:Update, context:CallbackContext):
         update.message.reply_text("You have not registered. Please register first by running the command /register")
         return ConversationHandler.END
     keyboard = [[InlineKeyboardButton("Start", callback_data= "subject_select")],
-                [InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")]]
+                [InlineKeyboardButton("Cancel", callback_data= "cancellqef")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text("Press to start the quiz: ", reply_markup=reply_markup)
 
@@ -111,7 +64,7 @@ def subject_select(update:Update, context:CallbackContext):
     query = update.callback_query
     # TODO make the subjects appear in two columns
     subjects = models.Subject.objects.all().values_list('id', 'name')
-    keyboard = [[InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")]]
+    keyboard = [[InlineKeyboardButton("Cancel", callback_data= "cancel")]]
     for id, name in subjects:
         keyboard.append([InlineKeyboardButton(f'{name}', callback_data= f'SUBID-{id}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -119,7 +72,7 @@ def subject_select(update:Update, context:CallbackContext):
     return QUESTION_SELECT
 
 
-@util.send_typing_action
+util.send_typing_action
 def question_select(update:Update, context:CallbackContext):
     # get initial data
     now = timezone.now()
@@ -156,15 +109,90 @@ def question_select(update:Update, context:CallbackContext):
     logger(f"Session created with id <{session.id}>. Creation Date: {session.date_created}")
 
     keyboard = [[InlineKeyboardButton("Start Test", callback_data= f'SESSIONID-{session.id}')],
-                [InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")]]
+                [InlineKeyboardButton("Cancel", callback_data= "cancel")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     subject = models.Subject.objects.get(id= subject_id)
     query.message.edit_text(
-        f"You have chosen {subject.name}. You will recieve {settings.NUMBER_OF_QUESTIONS} questions. \nIf you are ready press'Start Test'.",
+        f"You have chosen {subject.name}. Your quiz has {settings.NUMBER_OF_QUESTIONS} questions.\n"\
+         "Here is the session ID to this qiz:\n"\
+         f"{session.id}",
         reply_markup= reply_markup)
     query.answer()
         
-    return QUIZ
+    return TEST_CREATION
+
+
+# ---------------------------------------------------------------------------------------
+# Register Conversation
+
+@util.send_typing_action
+def start_register(update:Update, context:CallbackContext):
+    # TODO BOOK_MARK create steps for aquiring contact information
+    user_id = update.message.from_user.id
+    
+    if models.User.objects.filter(user_id= user_id).exists():
+        update.message.reply_text("You have already registered. You can take a quiz by running the command /start_quiz")
+        return ConversationHandler.END
+    
+    contact_keyboard = [
+        [KeyboardButton(text="Share Contact", request_contact= True), ('/cancel')],
+     ]
+    reply_markup = ReplyKeyboardMarkup(contact_keyboard, input_field_placeholder= "Press /cancel to cancel the process...")
+    update.message.reply_text("Please share your contact information: ", reply_markup= reply_markup)
+    return REG_CONTACT
+        
+@util.send_typing_action
+def register_contact(update:Update, context:CallbackContext):
+    contact = update.message.contact
+    chat_id = update.message.chat_id
+    # TODO make phone number reg ex or create a form
+    user, create= models.User.objects.get_or_create(user_id = contact.user_id, chat_id= chat_id, username= contact.user_id)
+    if create:
+        user.first_name = contact.first_name
+        user.last_name = contact.last_name
+        user.phone_number = contact.phone_number
+        user.set_unusable_password()
+        user.save()
+    else:
+        update.message.reply_text("You have already registered!", reply_markup= ReplyKeyboardRemove())
+        return ConversationHandler.END
+    update.message.reply_text("Please share your education.", reply_markup= ReplyKeyboardRemove())
+    return REG_EDUCATION
+
+
+@util.send_typing_action
+def register_education(update:Update, context:CallbackContext):
+    # FIXME create a way to filter and authorize the education field
+    message = update.message.text
+    if message:
+        chat_id = update.message.chat_id
+        user = models.User.objects.get(chat_id= chat_id)
+        user.education = message
+        user.save()
+        update.message.reply_text("Thank you for sharing your information! You can now start the test by running the command /start_quiz")
+    # TODO handle reply messages that are not text or are not correctly formatted
+    return ConversationHandler.END
+
+
+# ---------------------------------------------------------------------------------------
+# Quiz Conversation
+
+@util.send_typing_action
+def start_quiz(update:Update, context:CallbackContext):
+    # TODO if the user is not registered, don't let him start the quiz
+    user_id = update.message.from_user.id
+    try:
+        models.User.objects.get(user_id= user_id)
+    except models.User.DoesNotExist:
+        update.message.reply_text("You have not registered. Please register first by running the command /register")
+        return ConversationHandler.END
+    keyboard = [[InlineKeyboardButton("Start", callback_data= "subject_select")],
+                [InlineKeyboardButton("Cancel", callback_data= "cancell")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("Press to start the quiz: ", reply_markup=reply_markup)
+
+    return SUBJECT_SELECT
+    pass
 
 
 @util.send_typing_action
@@ -174,8 +202,8 @@ def quiz(update:Update, context:CallbackContext):
     data = query.data
     # print(data)
     
-    if data == 'cancel_test':
-        return cancel_test(update, context)
+    if data == 'cancel':
+        return cancel(update, context)
     
     # if we are here from the question select status
     elif re.match("^SESSIONID-\d+", data):
@@ -187,7 +215,7 @@ def quiz(update:Update, context:CallbackContext):
         keyboard = [
             # format of the data sent by this button is: {session_question_id}-{index} - we send questions this way
             [InlineKeyboardButton("Go to Question 1", callback_data= f'{session_questions_ids[0]}-{0}')],
-            [InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")]
+            [InlineKeyboardButton("Cancel", callback_data= "cancel")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.message.edit_text("Select to go to the first question:", reply_markup= reply_markup)
@@ -223,7 +251,7 @@ def quiz(update:Update, context:CallbackContext):
             ],
             next_prev_buttons, # place holder for next and previous buttons
             [
-                InlineKeyboardButton("Cancel Test", callback_data= "cancel_test")
+                InlineKeyboardButton("Cancel", callback_data= "cancel")
             ]
         ]
         
@@ -232,14 +260,6 @@ def quiz(update:Update, context:CallbackContext):
         query.answer()
     
     return QUIZ
-
-
-@util.send_typing_action
-def cancel_test(update:Update, context:CallbackContext):
-    this_udpate = util.get_update(update, context)
-    this_udpate.answer()
-    this_udpate.message.edit_text("Canceled the test.")
-    return ConversationHandler.END
 
 
 # ---------------------------------------------------------------------------------------
@@ -252,22 +272,33 @@ def main():
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
                         level= logging.INFO)
 
+    create_test_conversation = ConversationHandler(
+        entry_points= [CommandHandler('create_test', create_test)],
+        states= {
+            SUBJECT_SELECT: [CallbackQueryHandler(subject_select, pattern= 'subject_select')],
+            QUESTION_SELECT: [CallbackQueryHandler(question_select, pattern= "^SUBID-\d+")],
+            TEST_CREATION: []
+            },
+        fallbacks= [
+            CommandHandler('cancel', cancel),
+            CallbackQueryHandler(cancel, pattern= 'cancel')
+            ]
+    )
+
     quiz_conversation = ConversationHandler(
         # this function sends this callback_data -> "subj_sel"
-        entry_points= [CommandHandler('start_test', start_quiz)],
+        entry_points= [CommandHandler('start_quiz', start_quiz)],
         states={
-            SUBJECT_SELECT: [CallbackQueryHandler(subject_select, pattern= "subject_select")],
-            QUESTION_SELECT: [CallbackQueryHandler(question_select, pattern= "^SUBID-\d+")],
             QUIZ: [CallbackQueryHandler(quiz)],
             },
         fallbacks= [
-            CommandHandler('cancel_test', cancel_test),
-            CallbackQueryHandler(cancel_test, pattern= 'cancel_test')
+            CommandHandler('cancel', cancel),
+            CallbackQueryHandler(cancel, pattern= 'cancel')
             ]
     )
     
     register_conversation = ConversationHandler(
-        entry_points= [CommandHandler('register', register_base)],
+        entry_points= [CommandHandler('register', start_register)],
         states={
             REG_CONTACT: [
                 MessageHandler(Filters.contact, register_contact),
@@ -276,13 +307,14 @@ def main():
                 MessageHandler(Filters.text, register_education)
             ]
             },
-        fallbacks= [CommandHandler('cancel_register', cancel_register)],
+        fallbacks= [CommandHandler('cancel', cancel)],
     )
     
     handlers = [
         CommandHandler('start', start),
-        quiz_conversation, 
-        register_conversation
+        # quiz_conversation, 
+        register_conversation,
+        create_test_conversation
     ]
     
     for handler in handlers: 
