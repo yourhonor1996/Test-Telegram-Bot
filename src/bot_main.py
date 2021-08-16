@@ -21,19 +21,26 @@ from django.utils import timezone
 import re
 
 
-# create_test states
+# create_quiz states
 SUBJECT_SELECT, QUESTION_SELECT, TEST_CREATION = CREATE_TEST_STATES = range(3)
 # quiz states
 QUIZ, RESULTS = MAIN_PHASES = range(len(CREATE_TEST_STATES), len(CREATE_TEST_STATES) + 2)
 # registry states
 REG_CONTACT, REG_EDUCATION= REG_PHASES = range(len(MAIN_PHASES), len(MAIN_PHASES)+2)
 
+main_keyboard = ReplyKeyboardMarkup(
+        [['/start', '/register'],
+        ['/create_quiz', '/start_quiz']],
+        one_time_keyboard= True)
 
 def start(update:Update, context:CallbackContext):
     message = \
-    "Hello this is a telegram bot. Run the command /start_quiz to start the test.\n" \
-    "If you haven't registered please register via /register"
-    update.message.reply_text(message, parse_mode= PARSEMODE_HTML)
+    "Hello this is a quiz telegram bot. Here are the commands:\n" \
+    "If you haven't registered you can register via /register" \
+    "You can create a test and share it with your firends via /create_quiz\n" \
+    "You can start a quiz via /start_quiz"
+    
+    update.message.reply_text(message, parse_mode= PARSEMODE_HTML, reply_markup= main_keyboard)
 
 @util.send_typing_action
 def cancel(update:Update, context:CallbackContext):
@@ -45,7 +52,7 @@ def cancel(update:Update, context:CallbackContext):
 # Create Test Converstation
 
 @util.send_typing_action
-def create_test(update:Update, context:CallbackContext):
+def create_quiz(update:Update, context:CallbackContext):
     user_id = update.message.from_user.id
     try:
         models.User.objects.get(user_id= user_id)
@@ -55,7 +62,7 @@ def create_test(update:Update, context:CallbackContext):
     keyboard = [[InlineKeyboardButton("Start", callback_data= "subject_select")],
                 [InlineKeyboardButton("Cancel", callback_data= "cancellqef")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("Press to start the quiz: ", reply_markup=reply_markup)
+    update.message.reply_text("Press to create the quiz: ", reply_markup=reply_markup)
 
     return SUBJECT_SELECT
 
@@ -108,15 +115,14 @@ def question_select(update:Update, context:CallbackContext):
 
     logger(f"Session created with id <{session.id}>. Creation Date: {session.date_created}")
 
-    keyboard = [[InlineKeyboardButton("Start Test", callback_data= f'SESSIONID-{session.id}')],
-                [InlineKeyboardButton("Cancel", callback_data= "cancel")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # keyboard = [[InlineKeyboardButton("Start Test", callback_data= f'SESSIONID-{session.id}')],
+    #             [InlineKeyboardButton("Cancel", callback_data= "cancel")]]
+    # reply_markup = InlineKeyboardMarkup(keyboard)
     subject = models.Subject.objects.get(id= subject_id)
     query.message.edit_text(
         f"You have chosen {subject.name}. Your quiz has {settings.NUMBER_OF_QUESTIONS} questions.\n"\
          "Here is the session ID to this qiz:\n"\
-         f"{session.id}",
-        reply_markup= reply_markup)
+         f"{session.id}")
     query.answer()
         
     return TEST_CREATION
@@ -131,7 +137,9 @@ def start_register(update:Update, context:CallbackContext):
     user_id = update.message.from_user.id
     
     if models.User.objects.filter(user_id= user_id).exists():
-        update.message.reply_text("You have already registered. You can take a quiz by running the command /start_quiz")
+        update.message.reply_text(
+            "You have already registered. You can take a quiz by running the command /start_quiz",
+            reply_markup= main_keyboard)
         return ConversationHandler.END
     
     contact_keyboard = [
@@ -273,7 +281,7 @@ def main():
                         level= logging.INFO)
 
     create_test_conversation = ConversationHandler(
-        entry_points= [CommandHandler('create_test', create_test)],
+        entry_points= [CommandHandler('create_quiz', create_quiz)],
         states= {
             SUBJECT_SELECT: [CallbackQueryHandler(subject_select, pattern= 'subject_select')],
             QUESTION_SELECT: [CallbackQueryHandler(question_select, pattern= "^SUBID-\d+")],
