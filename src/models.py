@@ -96,6 +96,7 @@ class Session(models.Model):
     user = models.ManyToManyField(User)
     quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
 
+    users_to_start = models.IntegerField(default= 2, null= True)
     date_created = models.DateTimeField()
     date_taken = models.DateTimeField(null= True)
     
@@ -110,12 +111,11 @@ class Session(models.Model):
 class SessionAnswer(models.Model):
     '''This table stores the answers that has been recorded in a specific session.'''
 
-    quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
     session = models.ForeignKey(Session, on_delete= models.CASCADE)
     question = models.ForeignKey(Question, on_delete= models.CASCADE)
 
     submitted_test_answer = models.PositiveSmallIntegerField()
-    date_answered = models.DateTimeField()
+    date_answered = models.DateTimeField(null= True)
     correct_answer = models.BooleanField(default= False)
     
     def save(self, *args, **kwargs):
