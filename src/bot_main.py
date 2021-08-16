@@ -47,18 +47,25 @@ def cancel(update:Update, context:CallbackContext):
     this_udpate = util.get_update(update, context)
     this_udpate.message.reply_text("Canceled the process.", reply_markup= ReplyKeyboardRemove())
     return ConversationHandler.END
+
+def authorize_user(update:Update, context:CallbackContext):
+    user_id = update.message.from_user.id
+    if models.User.objects.filter(user_id= user_id).exists():
+        return True
+    else:
+        update.message.reply_text(
+            "You have not registered. Please register first by running the command /register",
+            reply_markup= main_keyboard)
+        return False
     
 # ---------------------------------------------------------------------------------------
 # Create Test Converstation
 
 @util.send_typing_action
 def create_quiz(update:Update, context:CallbackContext):
-    user_id = update.message.from_user.id
-    try:
-        models.User.objects.get(user_id= user_id)
-    except models.User.DoesNotExist:
-        update.message.reply_text("You have not registered. Please register first by running the command /register")
-        return ConversationHandler.END
+    if not authorize_user(update, context):
+        return ConversationHandler.END 
+    
     keyboard = [[InlineKeyboardButton("Start", callback_data= "subject_select")],
                 [InlineKeyboardButton("Cancel", callback_data= "cancellqef")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -136,7 +143,7 @@ def start_register(update:Update, context:CallbackContext):
     # TODO BOOK_MARK create steps for aquiring contact information
     user_id = update.message.from_user.id
     
-    if models.User.objects.filter(user_id= user_id).exists():
+    if authorize_user(update, context):
         update.message.reply_text(
             "You have already registered. You can take a quiz by running the command /start_quiz",
             reply_markup= main_keyboard)
@@ -188,12 +195,9 @@ def register_education(update:Update, context:CallbackContext):
 @util.send_typing_action
 def start_quiz(update:Update, context:CallbackContext):
     # TODO if the user is not registered, don't let him start the quiz
-    user_id = update.message.from_user.id
-    try:
-        models.User.objects.get(user_id= user_id)
-    except models.User.DoesNotExist:
-        update.message.reply_text("You have not registered. Please register first by running the command /register")
+    if not authorize_user(update, context):
         return ConversationHandler.END
+    
     keyboard = [[InlineKeyboardButton("Start", callback_data= "subject_select")],
                 [InlineKeyboardButton("Cancel", callback_data= "cancell")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
