@@ -146,9 +146,7 @@ def question_select(update:Update, context:CallbackContext):
     now = timezone.now()
     query = update.callback_query
     query.answer()
-    from_user = query.from_user
-    user_id = from_user.id
-    user = models.User.objects.get(user_id= user_id)
+    user = models.User.objects.get(user_id= util.get_user(update, context).id)
     subject_id = int(query.data.split("-")[1])
     # get random questions
     questions_queryset = \
@@ -288,7 +286,7 @@ def create_question_keyboard(session_question, index:int):
     # if we at the last question, create the option to submit the answer.
     if index == length-1:
         keyboard.append(
-            [InlineKeyboardButton("Submit Test", callback_data= "submit_quiz")])
+            [InlineKeyboardButton("Submit Test", callback_data= f"submit_quiz-{session_question.id}")])
     
     return keyboard
 
@@ -312,7 +310,7 @@ def start_quiz(update:Update, context:CallbackContext):
             return ConversationHandler.END    
 
     keyboard = [[InlineKeyboardButton(f"Start quiz with id {session.id}", callback_data= f"SESSIONID-{session.id}")],
-                [InlineKeyboardButton("Cancel", callback_data= "cancell")]]
+                [InlineKeyboardButton("Cancel", callback_data= "cancel")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text("Press to start the quiz: ", reply_markup=reply_markup)
 
@@ -325,17 +323,24 @@ def quiz(update:Update, context:CallbackContext):
     query.answer()
     session_questions_ids = []
     data = query.data
-    # print(data)
+    user = models.User.objects.get(user_id= util.get_user(update, context).id)
     
     # if the data were to cancel the test
     if data == 'cancel':
         return cancel(update, context)
     
     # if we want to submit the answer, go to the next state
-    elif data == 'submit_quiz':
+    elif re.match('submit_quiz-\d+', data):
+        # TODO what could go wrong in this get method?
+        session_question_id = int(data.split('-')[1])
+        # this is the last session_question sent from the submit button
+        last_session_question = models.SessionQuestion.objects.get(id= session_question_id)
+        session = last_session_question.session
         keyboard_ = [
-            [InlineKeyboardButton()]
+            [InlineKeyboardButton("Submit Test Answer", callback_data= f'{session.id}')]
         ]
+        text = "Are you sure you want to submit the test results?"
+        query.message.edit_text(text= text, reply_markup= InlineKeyboardMarkup(keyboard_))
         print(f"data in quiz:{data}")
         return RESULTS
     
@@ -369,9 +374,13 @@ def quiz(update:Update, context:CallbackContext):
         question = session_question.question
 
         keyboard = create_question_keyboard(session_question, index)
+        # if we have a question
         if re.match("\d+-\d+", data):
             try:
-                session_answer = models.SessionAnswer.objects.get(session= session_question.session, question= session_question.question)
+                session_answer = models.SessionAnswer.objects.get(
+                    session= session_question.session,
+                    question= session_question.question,
+                    user= user)
                 data_base_answer = session_answer.submitted_test_answer
             except models.SessionAnswer.DoesNotExist:
                 data_base_answer = None
@@ -382,11 +391,13 @@ def quiz(update:Update, context:CallbackContext):
             try:
                 session_answer = models.SessionAnswer.objects.get( 
                     session= session_question.session,
-                    question= session_question.question)
+                    question= session_question.question,
+                    user= user)
             except models.SessionAnswer.DoesNotExist:
                 session_answer = models.SessionAnswer.objects.create( 
                     session= session_question.session,
                     question= session_question.question,
+                    user= user,
                     submitted_test_answer= submitted_answer)
             finally:
                 session_answer.submitted_test_answer = submitted_answer
@@ -405,16 +416,29 @@ def quiz(update:Update, context:CallbackContext):
         elif data_base_answer == 4:
             keyboard[1][1].text += emoji
         
-        
-        
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.message.edit_text(f"Question No.{index+1}: {question.text}", reply_markup= reply_markup)
 
 
 def results(update:Update, context:CallbackContext):
+    # show the results to the user
     query = update.callback_query
-    query.answer()
     print(f"data in results:{query.data}")
+    user = models.User.objects.get(user_id= util.get_user(update, context).id)
+    session_id = int(query.data)
+    query.answer()
+    session = models.Session.objects.get(id= session_id)
+
+    # get all the answers that were submitted by this user
+    results_report = session.session_report
+    for item in results_report:
+        # query.message.reply_text(text= str(item))
+        text = util.create_quiz_report(item)
+        query.message.reply_text(text= text)
+    # query.message.reply_text(text= str(results_report))
+    return ConversationHandler.END
+        
+
 
 # ---------------------------------------------------------------------------------------
 # Main 
@@ -449,7 +473,7 @@ def main():
                 CallbackQueryHandler(quiz),
                 ],
             RESULTS: [
-                CallbackQueryHandler(results, pattern= 'submit_quiz')
+                CallbackQueryHandler(results)
             ]
             },
         fallbacks= [

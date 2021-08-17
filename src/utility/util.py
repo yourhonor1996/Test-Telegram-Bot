@@ -69,3 +69,26 @@ def get_session_question_ids(session):
     # we have to import django models after the settings configuratoin. We can't import models in the global scope.
     from src import models
     return models.SessionQuestion.objects.filter(session= session).order_by('id').values_list('id', flat= True)
+
+
+def get_user(update:Update, context:CallbackContext):
+    if not update.callback_query:
+        return update.message.from_user
+    return update.callback_query.from_user
+
+
+def create_quiz_report(report_dict:dict):
+    from src import models
+    session_answers = report_dict['session_answers']
+    user = models.User.objects.get(user_id= int(report_dict['user_id']))
+    text = \
+    f"User: {report_dict.get('full_name')}\n"
+    f"Correct Answers: {report_dict.get('correct_answers')}]n"
+    f"Wrong Answers: {report_dict.get('wrong_answers')}"
+    for item in session_answers:
+        i = 1
+        correct = "Yes" if item['was_correct'] else "No"
+        text += f"\n\nQuestion number {i}:\nText: {item['text']}\nCorrect Answer: {item['correct_answer']}\n" \
+            f"Submitted Answer: {item['submitted_answer']}\nWas The Answer Correct: {correct}"
+        i += 1
+    return text

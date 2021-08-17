@@ -9,6 +9,8 @@ from django.contrib.auth.models import AbstractUser
 # TODO limit the test answer to 1 to 4 
 # TODO create forms for validating data 
 # FIXME cerate limitation for education
+# TODO delete the "quiz" table and replace it with session
+# TODO make it so that if we have a null answer to a question we would have another state for the correctanswer
 # -------------------------------------------------
 # Managers
 class QuestionManager(models.Manager):
@@ -95,7 +97,7 @@ class Session(models.Model):
     
     user = models.ManyToManyField(User)
     quiz = models.ForeignKey(Quiz, on_delete= models.CASCADE)
-
+    
     users_to_start = models.IntegerField(default= 2, null= True)
     date_created = models.DateTimeField()
     date_taken = models.DateTimeField(null= True)
@@ -106,6 +108,34 @@ class Session(models.Model):
     
     def __str__(self):
         return self.title
+    
+    @property
+    def session_report(self):
+        session_users = self.user.all()
+        results = []
+        for user in session_users:
+            user_result  = {'session_answers':[]}
+            user_serssion_answers = SessionAnswer.objects.filter(session= self, user= user)
+            # count the correct and wrong answers and put them in the user_result dictionary
+            n_correct_answers = user_serssion_answers.filter(correct_answer = True).count()
+            n_wrong_answers = user_serssion_answers.filter(correct_answer = False).count()
+            user_result.update({
+                'user_id': user.user_id,
+                'full_name': user.full_name,
+                'correct_answers': n_correct_answers,
+                'wrong_answers': n_wrong_answers
+            })
+            for session_answer in user_serssion_answers:
+                user_result['session_answers'].append({
+                    'id': session_answer.id, 
+                    'text': session_answer.question.text,
+                    'correct_answer': session_answer.question.test_answer,
+                    'submitted_answer': session_answer.submitted_test_answer,
+                    'was_correct': session_answer.correct_answer
+                    }
+                )
+            results.append(user_result)
+        return results
 
 
 class SessionAnswer(models.Model):
@@ -113,6 +143,7 @@ class SessionAnswer(models.Model):
 
     session = models.ForeignKey(Session, on_delete= models.CASCADE)
     question = models.ForeignKey(Question, on_delete= models.CASCADE)
+    user = models.ForeignKey(User, on_delete= models.CASCADE)
 
     submitted_test_answer = models.PositiveSmallIntegerField()
     date_answered = models.DateTimeField(null= True)
